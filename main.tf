@@ -15,7 +15,7 @@ resource "random_string" "generated_password" {
 
 ## Actions that has to be taken on all nodes in the cluster
 resource "null_resource" "icp-cluster" {
-  depends_on = ["null_resource.icp-cluster-preconfig-hook-continue-on-fail", "null_resource.icp-cluster-preconfig-hook-stop-on-fail"]
+  depends_on = ["null_resource.icp-cluster-preconfig-hook-fail-ok", "null_resource.icp-cluster-preconfig-hook-fail-bad"]
   count = "${var.cluster_size}"
 
   connection {
@@ -58,7 +58,7 @@ resource "null_resource" "icp-cluster" {
 ## icp-boot-preconfig hooks are run before icp-docker, if defined
 
 resource "null_resource" "icp-docker" {
-  depends_on = ["null_resource.icp-boot-preconfig-continue-on-fail", "null_resource.icp-boot-preconfig-stop-on-fail", "null_resource.icp-cluster"]
+  depends_on = ["null_resource.icp-boot-preconfig-fail-ok", "null_resource.icp-boot-preconfig-fail-bad", "null_resource.icp-cluster"]
 
   # Boot node is always the first entry in the IP list, so if we're not pulling in parallel this will only happen on boot node
   connection {
@@ -232,7 +232,7 @@ locals {
 }
 # Start the installer
 resource "null_resource" "icp-install" {
-  depends_on = ["null_resource.local-preinstall-hook-continue-on-fail", "null_resource.local-preinstall-hook-stop-on-fail", "null_resource.icp-generate-hosts-files"]
+  depends_on = ["null_resource.local-preinstall-hook-fail-ok", "null_resource.local-preinstall-hook-fail-bad", "null_resource.icp-generate-hosts-files"]
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {

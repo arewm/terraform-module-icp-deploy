@@ -3,7 +3,7 @@
 #######
 
 ## Cluster Pre-config hook
-resource "null_resource" "icp-cluster-preconfig-hook-stop-on-fail" {
+resource "null_resource" "icp-cluster-preconfig-hook-fail-bad" {
   count = "${var.on_hook_failure == "fail" ? var.cluster_size : 0}"
 
   connection {
@@ -22,7 +22,7 @@ resource "null_resource" "icp-cluster-preconfig-hook-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "icp-cluster-preconfig-hook-continue-on-fail" {
+resource "null_resource" "icp-cluster-preconfig-hook-fail-ok" {
   count = "${var.on_hook_failure != "fail" ? var.cluster_size : 0}"
 
   connection {
@@ -47,7 +47,7 @@ resource "null_resource" "icp-cluster-preconfig-hook-continue-on-fail" {
 #######
 
 ## Cluster postconfig hook
-resource "null_resource" "icp-cluster-postconfig-hook-stop-on-fail" {
+resource "null_resource" "icp-cluster-postconfig-hook-fail-bad" {
   depends_on = ["null_resource.icp-cluster"]
   count = "${var.on_hook_failure == "fail" ? var.cluster_size : 0}"
 
@@ -67,7 +67,7 @@ resource "null_resource" "icp-cluster-postconfig-hook-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "icp-cluster-postconfig-hook-continue-on-fail" {
+resource "null_resource" "icp-cluster-postconfig-hook-fail-ok" {
   depends_on = ["null_resource.icp-cluster"]
   count = "${var.on_hook_failure != "fail" ? var.cluster_size : 0}"
 
@@ -90,8 +90,8 @@ resource "null_resource" "icp-cluster-postconfig-hook-continue-on-fail" {
 
 
 # First hook for Boot node
-resource "null_resource" "icp-boot-preconfig-stop-on-fail" {
-  depends_on = ["null_resource.icp-cluster-postconfig-hook-continue-on-fail", "null_resource.icp-cluster-postconfig-hook-stop-on-fail", "null_resource.icp-cluster"]
+resource "null_resource" "icp-boot-preconfig-fail-bad" {
+  depends_on = ["null_resource.icp-cluster-postconfig-hook-fail-ok", "null_resource.icp-cluster-postconfig-hook-fail-bad", "null_resource.icp-cluster"]
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
@@ -111,8 +111,8 @@ resource "null_resource" "icp-boot-preconfig-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "icp-boot-preconfig-continue-on-fail" {
-  depends_on = ["null_resource.icp-cluster-postconfig-hook-stop-on-fail", "null_resource.icp-cluster-postconfig-hook-continue-on-fail", "null_resource.icp-cluster"]
+resource "null_resource" "icp-boot-preconfig-fail-ok" {
+  depends_on = ["null_resource.icp-cluster-postconfig-hook-fail-bad", "null_resource.icp-cluster-postconfig-hook-fail-ok", "null_resource.icp-cluster"]
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
@@ -137,7 +137,7 @@ resource "null_resource" "icp-boot-preconfig-continue-on-fail" {
 ## Hooks to run before installation
 #######
 # Boot node hook
-resource "null_resource" "icp-preinstall-hook-stop-on-fail" {
+resource "null_resource" "icp-preinstall-hook-fail-bad" {
   depends_on = ["null_resource.icp-generate-hosts-files"]
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
@@ -158,7 +158,7 @@ resource "null_resource" "icp-preinstall-hook-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "icp-preinstall-hook-continue-on-fail" {
+resource "null_resource" "icp-preinstall-hook-fail-ok" {
   depends_on = ["null_resource.icp-generate-hosts-files"]
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
@@ -181,8 +181,8 @@ resource "null_resource" "icp-preinstall-hook-continue-on-fail" {
 }
 
 # Local preinstall hook
-resource "null_resource" "local-preinstall-hook-stop-on-fail" {
-  depends_on = ["null_resource.icp-preinstall-hook-continue-on-fail", "null_resource.icp-preinstall-hook-stop-on-fail"]
+resource "null_resource" "local-preinstall-hook-fail-bad" {
+  depends_on = ["null_resource.icp-preinstall-hook-fail-ok", "null_resource.icp-preinstall-hook-fail-bad"]
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   provisioner "local-exec" {
@@ -190,8 +190,8 @@ resource "null_resource" "local-preinstall-hook-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "local-preinstall-hook-continue-on-fail" {
-  depends_on = ["null_resource.icp-preinstall-hook-continue-on-fail", "null_resource.icp-preinstall-hook-stop-on-fail"]
+resource "null_resource" "local-preinstall-hook-fail-ok" {
+  depends_on = ["null_resource.icp-preinstall-hook-fail-ok", "null_resource.icp-preinstall-hook-fail-bad"]
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
   provisioner "local-exec" {
@@ -202,7 +202,7 @@ resource "null_resource" "local-preinstall-hook-continue-on-fail" {
 
 
 # Local postinstall hook
-resource "null_resource" "local-postinstall-hook-stop-on-fail" {
+resource "null_resource" "local-postinstall-hook-fail-bad" {
   depends_on = ["null_resource.icp-install"]
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
@@ -211,7 +211,7 @@ resource "null_resource" "local-postinstall-hook-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "local-postinstall-hook-continue-on-fail" {
+resource "null_resource" "local-postinstall-hook-fail-ok" {
   depends_on = ["null_resource.icp-install"]
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
@@ -226,7 +226,7 @@ resource "null_resource" "local-postinstall-hook-continue-on-fail" {
 #######
 
 # Hook for Boot node
-resource "null_resource" "icp-postinstall-hook-stop-on-fail" {
+resource "null_resource" "icp-postinstall-hook-fail-bad" {
   depends_on = ["null_resource.icp-install"]
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
@@ -247,7 +247,7 @@ resource "null_resource" "icp-postinstall-hook-stop-on-fail" {
     on_failure = "fail"
   }
 }
-resource "null_resource" "icp-postinstall-hook-continue-on-fail" {
+resource "null_resource" "icp-postinstall-hook-fail-ok" {
   depends_on = ["null_resource.icp-install"]
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
